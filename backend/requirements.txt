@@ -1,0 +1,5 @@
+Flask
+Flask-Cors
+google-cloud-compute
+PyYAML
+gunicorn
