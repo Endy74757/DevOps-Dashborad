@@ -1,0 +1,122 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+.gcp-section, .script-runner-section {
+  width: 100%;
+  max-width: 960px;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background-color: #2a2a2e;
+}
+
+.gcp-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.gcp-inputs input {
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #555;
+  background-color: #333;
+  color: white;
+  flex-grow: 1;
+}
+
+.gcp-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.gcp-table {
+  width: 100%;
+  margin-top: 1rem;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.gcp-table th, .gcp-table td {
+  border: 1px solid #444;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.gcp-table th {
+  background-color: #33373d;
+}
+
+.gcp-table tbody tr:nth-child(odd) {
+  background-color: #2c2f33;
+}
+
+.output-area {
+  margin-top: 2rem;
+  padding: 1rem;
+  width: 100%;
+  background-color: #202124;
+  border-radius: 8px;
+  text-align: left;
+  font-family: 'Courier New', Courier, monospace;
+  box-sizing: border-box;
+}
+
+.output-area h3 {
+  margin-top: 0;
+  color: #a7a7a7;
+}
+
+.error-output {
+  color: #ff8a80; /* สีแดงสำหรับ error */
+  white-space: pre-wrap; /* ทำให้ข้อความยาวๆ ขึ้นบรรทัดใหม่ */
+}
+
+.success-output {
+  color: #b9f6ca; /* สีเขียวสำหรับ success */
+  white-space: pre-wrap;
+}
