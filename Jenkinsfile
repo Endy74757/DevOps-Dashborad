@@ -5,6 +5,8 @@ pipeline
         // Replace with your actual proxy details
         HTTP_PROXY  = 'http://192.168.1.6:3128'
         HTTPS_PROXY = 'http://192.168.1.6:3128'
+        VERSION = "v0.0.${BUILD_NUMBER}"
+        IMAGE_NAME = "devops-dashboard"
     }
     stages{
         // stage("Checkout Code"){
@@ -27,8 +29,8 @@ pipeline
                     sh '''
                         echo "========Build and Push Docker Image========"
                         echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin
-                        docker-compose build
-                        docker-compose push
+                        cat docker-compose.yml | envsubst | docker-compose build -
+                        cat docker-compose.yml | envsubst | docker-compose push -
                         docker logout
                     '''
                 }
@@ -40,12 +42,17 @@ pipeline
                 dir("/k8s")
                 {
                     withKubeConfig(credentialsId: "kubeconfig"){
-                        sh '''
-                            echo "========Deploy To Kubernetes========"
-                            kubectl apply -f *.yaml
-                            kubectl get pods
-                            kubectl get svc
-                        '''
+                        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER')]){
+                            sh '''
+                                echo "========Deploy To Kubernetes========"
+                                cat backend-deployment.yaml | envsubst | kubectl apply -f -
+                                cat frontend-deployment.yaml | envsubst | kubectl apply -f -
+                                kubectl apply -f *-service.yaml
+                                kubectl get pods
+                                kubectl get svc
+                            '''
+                        }
+                        
                     }    
                 }
                 

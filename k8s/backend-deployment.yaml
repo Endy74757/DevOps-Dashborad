@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: ${IMAGE_REGISTRY}/${IMAGE_NAME}:latest
+        image: ${DOCKER_USER}/be-${IMAGE_NAME}:${VERSION}
         ports:
         - containerPort: 5000
         env:

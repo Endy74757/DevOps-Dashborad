@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile_backend
+    image: ${DOCKER_USER}/be-${IMAGE_NAME}:${VERSION}
     ports:
       - "5000:5000"
     environment:
@@ -17,6 +18,7 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile_frontend
+    image: ${DOCKER_USER}/fe-${IMAGE_NAME}:${VERSION}
     ports:
       - "80:80"
     depends_on:
