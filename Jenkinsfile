@@ -17,29 +17,36 @@ pipeline
             }
         }
 
-        // stage("Build and Push Docker Image"){
-        //     steps{
+        stage("Build and Push Docker Image"){
+            steps{
                 
-        //         withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-        //             sh '''
-        //                 echo "========Build and Push Docker Image========"
-        //                 echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin
-        //                 cat docker-compose.yml | envsubst | sudo -E docker compose -f - build
-        //                 cat docker-compose.yml | envsubst | sudo -E docker compose -f - push
-        //                 docker logout
-        //             '''
-        //         }
-        //     }
-        // }
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo "========Build and Push Docker Image========"
+                        echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin
+                        cat docker-compose.yml | envsubst | sudo -E docker compose -f - build
+                        cat docker-compose.yml | envsubst | sudo -E docker compose -f - push
+                        docker logout
+                    '''
+                }
+            }
+        }
 
         stage("Clean Old Images1"){
             steps{
                 sh '''
                     echo "========Clean Old Images========"
-                    BeImage = $(sudo docker images --format "{{.Repository}}:{{.Tag}} {{.CreatedAt}}" | grep ".*${IMAGE_NAME}:" | sort -rk2 | awk '{print $1}')
+                    KEEP=5
+                    IMAGES=$(sudo docker images --format "{{.Repository}}:{{.Tag}} {{.CreatedAt}}" | grep ".*${IMAGE_NAME}:" | sort -rk2 | awk '{print $1}')
 
-                    DELETE_LIST=$(echo "$BeImage" | grep "be-${IMAGE_NAME}:" | sort -rk2 | tail -n +$(($KEEP + 1))) + $(echo "$BeImage" | grep "be-${IMAGE_NAME}:" | sort -rk2 | tail -n +$(($KEEP + 1)))
+                    DELETE_LIST="$(echo "$IMAGES" | grep "be.*" | tail -n +$(($KEEP + 1))) $(echo "$BeImage" | grep "fe.*" |tail -n +$(($KEEP + 1)))"
                     echo $DELETE_LIST
+
+                    for IMAGE in $DELETE_LIST
+                    do
+                        echo "Removing $IMAGE"
+                        sudo docker rmi $IMAGE
+                    done
 
                 '''
             }
