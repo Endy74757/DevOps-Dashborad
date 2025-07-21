@@ -4,15 +4,13 @@ services:
       context: .
       dockerfile: backend/Dockerfile_backend
       args:
-        - http_proxy=${HTTP_PROXY}
-        - https_proxy=${HTTPS_PROXY}
+        HTTP_PROXY: ${HTTP_PROXY}
+        HTTPS_PROXY: ${HTTPS_PROXY}
     image: ${DOCKER_USER}/be-${IMAGE_NAME}:${VERSION}
     ports:
       - "5000:5000"
     environment:
       # ตั้งค่า environment variables ที่ backend ต้องการ
-      http_proxy: ${HTTP_PROXY}
-      https_proxy: ${HTTPS_PROXY}
       FLASK_ENV: development # หรือ production
     volumes:
       - ./backend:/app # สำหรับ Development, เพื่อให้โค้ด sync อัตโนมัติ
@@ -22,8 +20,8 @@ services:
       context: .
       dockerfile: frontend/Dockerfile_frontend
       args:
-        - http_proxy=${HTTP_PROXY}
-        - https_proxy=${HTTPS_PROXY}
+        HTTP_PROXY: ${HTTP_PROXY}
+        HTTPS_PROXY: ${HTTPS_PROXY}
     image: ${DOCKER_USER}/fe-${IMAGE_NAME}:${VERSION}
     ports:
       - "80:80"
@@ -35,6 +33,4 @@ services:
       # สำหรับ React Development: ตั้งค่าเพื่อให้ Vite HMR ทำงาน
       # ต้องตรวจสอบว่า Vite กำหนด VITE_API_URL หรือคล้ายกัน
       # ถ้าใช้ Nginx Proxy Pass ตัวนี้ไม่จำเป็นสำหรับ Production Build
-      http_proxy: ${HTTP_PROXY}
-      https_proxy: ${HTTPS_PROXY}
       VITE_API_URL: http://localhost:5000/api
