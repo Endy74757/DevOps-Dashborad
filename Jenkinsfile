@@ -10,13 +10,6 @@ pipeline
         IMAGE_NAME = "devops-dashboard"
     }
     stages{
-        
-        stage("Test Web"){
-            steps{
-                echo "========Test Web2========"
-            }
-        }
-
         stage("Build and Push Docker Image"){
             steps{
                 
@@ -32,7 +25,7 @@ pipeline
             }
         }
 
-        stage("Clean Old Images1"){
+        stage("Clean Old Images"){
             steps{
                 sh '''
                     echo "========Clean Old Images========"
@@ -44,7 +37,6 @@ pipeline
 
                     for IMAGE in $DELETE_LIST
                     do
-                        echo "Removing $IMAGE"
                         sudo docker rmi $IMAGE
                     done
 
@@ -53,24 +45,24 @@ pipeline
         }
 
 
-        // stage("Deploy To Kubernetes"){
-        //     steps{
-        //         withKubeConfig(credentialsId: 'kubeconfig'){
-        //             withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]){
-        //                 sh '''
-        //                     echo "========Deploy To Kubernetes========"
-        //                     cat k8s/backend-deployment.yaml | envsubst | kubectl apply -f -
-        //                     cat k8s/frontend-deployment.yaml | envsubst | kubectl apply -f -
-        //                     kubectl apply -f k8s/backend-service.yaml -f k8s/frontend-service.yaml
-        //                     sleep 10
-        //                     kubectl get pods
-        //                     kubectl get svc
-        //                 '''
-        //             }
-        //         }
+        stage("Deploy To Kubernetes"){
+            steps{
+                withKubeConfig(credentialsId: 'kubeconfig'){
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]){
+                        sh '''
+                            echo "========Deploy To Kubernetes========"
+                            cat k8s/backend-deployment.yaml | envsubst | kubectl apply -f -
+                            cat k8s/frontend-deployment.yaml | envsubst | kubectl apply -f -
+                            kubectl apply -f k8s/backend-service.yaml -f k8s/frontend-service.yaml
+                            sleep 10
+                            kubectl get pods
+                            kubectl get svc
+                        '''
+                    }
+                }
                 
-        //     }
-        // }
+            }
+        }
         
     }
     post {
