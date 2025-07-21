@@ -40,7 +40,9 @@ pipeline
                             echo "========Deploy To Kubernetes========"
                             cat k8s/backend-deployment.yaml | envsubst | kubectl apply -f -
                             cat k8s/frontend-deployment.yaml | envsubst | kubectl apply -f -
-                            kubectl apply -f k8s/*-service.yaml
+                            kubectl apply -f k8s/backend-service.yaml
+                            kubectl apply -f k8s/frontend-service.yaml
+                            sleep 10
                             kubectl get pods
                             kubectl get svc
                         '''
