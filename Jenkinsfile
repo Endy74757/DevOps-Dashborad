@@ -5,6 +5,7 @@ pipeline
         // Replace with your actual proxy details
         HTTP_PROXY  = 'http://192.168.1.6:3128'
         HTTPS_PROXY = 'http://192.168.1.6:3128'
+        NO_PROXY    = 'localhost,127.0.0.1,192.168.2.3,.svc,.cluster.local'
         VERSION = "v0.0.${BUILD_NUMBER}"
         IMAGE_NAME = "devops-dashboard"
     }
@@ -37,8 +38,8 @@ pipeline
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]){
                         sh '''
                             echo "========Deploy To Kubernetes========"
-                            cat k8s/backend-deployment.yaml | envsubst | kubectl apply --validate=false -f -
-                            cat k8s/frontend-deployment.yaml | envsubst | kubectl apply --validate=false -f -
+                            cat k8s/backend-deployment.yaml | envsubst | kubectl apply -f -
+                            cat k8s/frontend-deployment.yaml | envsubst | kubectl apply -f -
                             kubectl apply -f k8s/*-service.yaml
                             kubectl get pods
                             kubectl get svc
