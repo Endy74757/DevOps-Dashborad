@@ -32,7 +32,7 @@ pipeline
         //     }
         // }
 
-        stage("Clean Old Images"){
+        stage("Clean Old Images1"){
             steps{
                 sh '''
                     echo "========Clean Old Images========"
