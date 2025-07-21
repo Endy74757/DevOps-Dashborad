@@ -29,8 +29,8 @@ pipeline
                     sh '''
                         echo "========Build and Push Docker Image========"
                         echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin
-                        cat docker-compose.yml | envsubst | docker compose build
-                        cat docker-compose.yml | envsubst | docker compose push
+                        cat docker-compose.yml | envsubst | sudo docker compose build
+                        cat docker-compose.yml | envsubst | sudo docker compose push
                         docker logout
                     '''
                 }
@@ -45,11 +45,11 @@ pipeline
                         withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER')]){
                             sh '''
                                 echo "========Deploy To Kubernetes========"
-                                cat backend-deployment.yaml | envsubst | kubectl apply -f -
+                                cat backend-deployment.yaml | envsubst | sudo kubectl apply -f -
                                 cat frontend-deployment.yaml | envsubst | kubectl apply -f -
-                                kubectl apply -f *-service.yaml
-                                kubectl get pods
-                                kubectl get svc
+                                sudo kubectl apply -f *-service.yaml
+                                sudo kubectl get pods
+                                sudo kubectl get svc
                             '''
                         }
                         
