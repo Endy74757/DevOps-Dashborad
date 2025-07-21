@@ -33,21 +33,17 @@ pipeline
 
         stage("Deploy To Kubernetes"){
             steps{
-                dir("/k8s")
-                {
-                    withKubeConfig(credentialsId: "kubeconfig"){
-                        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER')]){
-                            sh '''
-                                echo "========Deploy To Kubernetes========"
-                                cat backend-deployment.yaml | envsubst | sudo kubectl apply -f -
-                                cat frontend-deployment.yaml | envsubst | kubectl apply -f -
-                                sudo kubectl apply -f *-service.yaml
-                                sudo kubectl get pods
-                                sudo kubectl get svc
-                            '''
-                        }
-                        
-                    }    
+                withKubeConfig(credentialsId: "kubeconfig"){
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER')]){
+                        sh '''
+                            echo "========Deploy To Kubernetes========"
+                            cat k8s/backend-deployment.yaml | envsubst | sudo kubectl apply -f -
+                            cat k8s/frontend-deployment.yaml | envsubst | kubectl apply -f -
+                            sudo kubectl apply -f k8s/*-service.yaml
+                            sudo kubectl get pods
+                            sudo kubectl get svc
+                        '''
+                    }
                 }
                 
             }
