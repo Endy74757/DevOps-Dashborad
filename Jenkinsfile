@@ -29,8 +29,8 @@ pipeline
                     sh '''
                         echo "========Build and Push Docker Image========"
                         echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin
-                        cat docker-compose.yml | envsubst | docker-compose build -
-                        cat docker-compose.yml | envsubst | docker-compose push -
+                        cat docker-compose.yml | envsubst | docker-compose build
+                        cat docker-compose.yml | envsubst | docker-compose push
                         docker logout
                     '''
                 }
