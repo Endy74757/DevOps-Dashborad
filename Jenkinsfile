@@ -39,7 +39,7 @@ pipeline
                     KEEP=5
                     IMAGES=$(sudo docker images --format "{{.Repository}}:{{.Tag}} {{.CreatedAt}}" | grep ".*${IMAGE_NAME}:" | sort -rk2 | awk '{print $1}')
 
-                    DELETE_LIST="$(echo "$IMAGES" | grep "be.*" | tail -n +$(($KEEP + 1))) $(echo "$BeImage" | grep "fe.*" |tail -n +$(($KEEP + 1)))"
+                    DELETE_LIST="$(echo "$IMAGES" | grep "be.*" | tail -n +$(($KEEP + 1))) $(echo "$IMAGES" | grep "fe.*" |tail -n +$(($KEEP + 1)))"
                     echo $DELETE_LIST
 
                     for IMAGE in $DELETE_LIST
