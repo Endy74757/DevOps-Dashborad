@@ -9,13 +9,7 @@ pipeline
         IMAGE_NAME = "devops-dashboard"
     }
     stages{
-        // stage("Checkout Code"){
-        //     steps{
-        //         echo "========Checkout Code========"
-        //         git url: "https://github.com/Endy74757/TestWeb.git", branch: "main"
-                
-        //     }
-        // }
+        
         stage("Test Web"){
             steps{
                 echo "========Test Web2========"
@@ -29,8 +23,8 @@ pipeline
                     sh '''
                         echo "========Build and Push Docker Image========"
                         echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin
-                        cat docker-compose.yml | envsubst | sudo docker compose build
-                        cat docker-compose.yml | envsubst | sudo docker compose push
+                        cat docker-compose.yml | envsubst | sudo -E docker compose -f - build
+                        cat docker-compose.yml | envsubst | sudo -E docker compose -f - push
                         docker logout
                     '''
                 }
