@@ -1,6 +1,11 @@
 pipeline
 {
     agent any
+    environment {
+        // Replace with your actual proxy details
+        HTTP_PROXY  = 'http://192.168.1.6:3128'
+        HTTPS_PROXY = 'http://192.168.1.6:3128'
+    }
     stages{
         // stage("Checkout Code"){
         //     steps{
