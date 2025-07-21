@@ -3,9 +3,6 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile_backend
-      args:
-        HTTP_PROXY: ${HTTP_PROXY}
-        HTTPS_PROXY: ${HTTPS_PROXY}
     image: ${DOCKER_USER}/be-${IMAGE_NAME}:${VERSION}
     ports:
       - "5000:5000"
@@ -19,9 +16,6 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile_frontend
-      args:
-        HTTP_PROXY: ${HTTP_PROXY}
-        HTTPS_PROXY: ${HTTPS_PROXY}
     image: ${DOCKER_USER}/fe-${IMAGE_NAME}:${VERSION}
     ports:
       - "80:80"
