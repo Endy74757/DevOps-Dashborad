@@ -37,11 +37,11 @@ pipeline
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]){
                         sh '''
                             echo "========Deploy To Kubernetes========"
-                            cat k8s/backend-deployment.yaml | envsubst | kubectl apply -f -
-                            cat k8s/frontend-deployment.yaml | envsubst | kubectl apply -f -
-                            sudo kubectl apply -f k8s/*-service.yaml
-                            sudo kubectl get pods
-                            sudo kubectl get svc
+                            cat k8s/backend-deployment.yaml | envsubst | kubectl apply --validate=false -f -
+                            cat k8s/frontend-deployment.yaml | envsubst | kubectl apply --validate=false -f -
+                            kubectl apply -f k8s/*-service.yaml
+                            kubectl get pods
+                            kubectl get svc
                         '''
                     }
                 }
