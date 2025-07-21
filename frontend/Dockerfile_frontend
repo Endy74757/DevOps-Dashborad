@@ -2,17 +2,25 @@ FROM node:18-alpine AS build
 
 WORKDIR /app
 
+# Copy package.json and package-lock.json (or yarn.lock)
+# This leverages Docker layer caching, so dependencies are only re-installed when they change.
+COPY frontend/package.json frontend/package-lock.json* ./
+
+# Install dependencies
 RUN npm install
 
+# Copy the rest of the application source code
 COPY frontend/ .
 
+# Build the application
 RUN npm run build
 
+# --- Production Stage ---
 FROM nginx:alpine
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-COPY --from=backend /app/dist /usr/share/nginx/html
+COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 80
 
