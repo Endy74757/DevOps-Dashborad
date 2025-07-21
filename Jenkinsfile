@@ -33,7 +33,7 @@ pipeline
 
         stage("Deploy To Kubernetes"){
             steps{
-                withKubeConfig(credentialsId: "kubeconfig"){
+                withKubeConfig(credentialsId: 'kubeconfig'){
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]){
                         sh '''
                             echo "========Deploy To Kubernetes========"
