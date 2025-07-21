@@ -22,8 +22,8 @@ services:
       context: .
       dockerfile: frontend/Dockerfile_frontend
       args:
-        - HTTP_PROXY=${http_proxy}
-        - HTTPS_PROXY=${https_proxy}
+        - http_proxy=http://192.168.1.6:3128 
+        - https_proxy=http://192.168.1.6:3128 
     image: ${DOCKER_USER}/fe-${IMAGE_NAME}:${VERSION}
     ports:
       - "80:80"
