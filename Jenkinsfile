@@ -2,6 +2,19 @@ pipeline
 {
     agent any
     stages{
+        // stage("Checkout Code"){
+        //     steps{
+        //         echo "========Checkout Code========"
+        //         git url: "https://github.com/Endy74757/TestWeb.git", branch: "main"
+                
+        //     }
+        // }
+        stage("Test Web"){
+            steps{
+                echo "========Test Web========"
+            }
+        }
+
         stage("Build and Push Docker Image"){
             steps{
                 
@@ -24,7 +37,7 @@ pipeline
                     withKubeConfig(credentialsId: "kubeconfig"){
                         sh '''
                             echo "========Deploy To Kubernetes========"
-                            kubectl apply -f k8s/*.yaml
+                            kubectl apply -f *.yaml
                             kubectl get pods
                             kubectl get svc
                         '''
