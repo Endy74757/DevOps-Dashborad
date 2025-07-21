@@ -36,10 +36,9 @@ pipeline
             steps{
                 sh '''
                     echo "========Clean Old Images========"
-                    BeImage = $(sudo docker images --format "{{.Repository}}:{{.Tag}} {{.CreatedAt}}" | grep "be-${IMAGE_NAME}:" | sort -rk2 | awk '{print $1}')
-                    FeImage = ${sudo docker images --format "{{.Repository}}:{{.Tag}} {{.CreatedAt}}" | grep "fe-${IMAGE_NAME}:" | sort -rk2 | awk '{print $1}'}
+                    BeImage = $(sudo docker images --format "{{.Repository}}:{{.Tag}} {{.CreatedAt}}" | grep ".*${IMAGE_NAME}:" | sort -rk2 | awk '{print $1}')
 
-                    DELETE_LIST=$(echo "$BeImage" | tail -n +$(($KEEP + 1))) and $(echo "$FeImage" | tail -n +$(($KEEP + 1)))
+                    DELETE_LIST=$(echo "$BeImage" | grep "be-${IMAGE_NAME}:" | sort -rk2 | tail -n +$(($KEEP + 1))) + $(echo "$BeImage" | grep "be-${IMAGE_NAME}:" | sort -rk2 | tail -n +$(($KEEP + 1)))
                     echo $DELETE_LIST
 
                 '''
