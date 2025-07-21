@@ -19,3 +19,8 @@ spec:
         image: ${DOCKER_USER}/fe-${IMAGE_NAME}:${VERSION}
         ports:
         - containerPort: 80
+      # ถ้ามี Worker Node ให้เอา tolerations ออก
+      tolerations: #ทำให้อนุญาติการทำงานสร้าง pod ในเครื่อง master node ได้
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+        effect: "NoSchedule"

@@ -22,4 +22,8 @@ spec:
         env:
         - name: FLASK_ENV
           value: "production"
-  
+      # ถ้ามี Worker Node ให้เอา tolerations ออก
+      tolerations: #ทำให้อนุญาติการทำงานสร้าง pod ในเครื่อง master node ได้
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+        effect: "NoSchedule"
