@@ -208,7 +208,7 @@ function App() {
           <button onClick={handleFetchVMsFromUpload} disabled={isGcpLoading}>
             {isGcpLoading ? 'Fetching...' : 'List VMs from Uploaded File'}
           </button>
-        }
+        </div>
       </div>
 
       {/* --- Script Runner Section --- */}
