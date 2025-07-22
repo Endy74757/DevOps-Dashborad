@@ -3,12 +3,10 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
 # New imports for GCP
-import json
 from google.oauth2 import service_account
 from google.cloud import compute_v1
 from google.api_core import exceptions as google_exceptions
 import yaml
-import tempfile
 
 app = Flask(__name__)
 # อนุญาตให้ frontend (เช่น localhost:5173) เรียก API นี้ได้
@@ -146,89 +144,7 @@ def list_gcp_vms():
     except Exception as e:
         return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
 
-@app.route('/gcp/vms/upload', methods=['POST'])
-def list_gcp_vms_from_upload():
-    # Check if the post request has the file part
-    if 'service_account_file' not in request.files:
-        return jsonify({'error': 'No service_account_file part in the request'}), 400
-    
-    file = request.files['service_account_file']
-    project_id = request.form.get('project_id')
-    zone = request.form.get('zone')
 
-    if not file or file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-    if not project_id or not zone:
-        return jsonify({'error': 'project_id and zone are required'}), 400
-    if not file.filename.endswith('.json'):
-        return jsonify({'error': 'File must be a .json file'}), 400
-
-    # Use a temporary file to securely handle the uploaded credentials
-    temp_file_path = None
-    try:
-        # Create a temporary file and write the uploaded content to it
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".json", mode='w', encoding='utf-8') as temp_f:
-            file.save(temp_f)
-            temp_file_path = temp_f.name
-        
-        # Now use this temporary file to get credentials
-        credentials_info = json.load(open(temp_file_path, 'r', encoding='utf-8'))
-        credentials = service_account.Credentials.from_service_account_info(
-            credentials_info,
-            scopes=["https://www.googleapis.com/auth/cloud-platform"]
-        )
-
-        vm_list = _list_vms_from_credentials(credentials, project_id, zone)
-        return jsonify(vm_list)
-
-    except json.JSONDecodeError:
-        return jsonify({'error': 'Invalid JSON file format.'}), 400
-    except google_exceptions.NotFound:
-        return jsonify({'error': f'Project "{project_id}" or zone "{zone}" not found.'}), 404
-    except google_exceptions.PermissionDenied:
-        return jsonify({'error': 'Permission denied. Check the Service Account credentials and ensure it has the "Compute Viewer" role.'}), 403
-    except Exception as e:
-        return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
-    finally:
-        # Ensure the temporary file is deleted
-        if temp_file_path and os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
-
-@app.route('/gcp/load-balancers', methods=['POST'])
-def list_load_balancers():
-    data = request.get_json()
-    project_id = data.get('project_id')
-    region = data.get('region')
-
-    if not project_id or not region:
-        return jsonify({'error': 'project_id and region are required'}), 400
-
-    try:
-        credentials = get_gcp_credentials(project_id)
-        client = compute_v1.ForwardingRulesClient(credentials=credentials)
-        forwarding_rules = client.list(project=project_id, region=region)
-        
-        lb_list = []
-        for rule in forwarding_rules:
-            lb_list.append({
-                'name': rule.name,
-                'ip_address': rule.i_p_address,
-                'target': rule.target.split('/')[-1],
-                'load_balancing_scheme': rule.load_balancing_scheme,
-                'ip_protocol': rule.i_p_protocol,
-                'ports': list(rule.ports)
-            })
-            
-        return jsonify(lb_list)
-
-    except google_exceptions.NotFound:
-        return jsonify({'error': f'Project "{project_id}" or region "{region}" not found.'}), 404
-    except google_exceptions.PermissionDenied:
-        return jsonify({'error': 'Permission denied. Check the Service Account credentials and ensure it has the "Compute Viewer" role.'}), 403
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
-    except Exception as e:
-        return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
 
 if __name__ == '__main__':
     # --- Check for GOOGLE_APPLICATION_CREDENTIALS ---

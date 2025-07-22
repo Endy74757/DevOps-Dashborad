@@ -17,10 +17,7 @@ function App() {
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
 
-  // States for ad-hoc project via upload
-  const [uploadFile, setUploadFile] = useState(null);
-  const [uploadProjectId, setUploadProjectId] = useState('');
-  const [uploadZone, setUploadZone] = useState('');
+ 
 
   const [projectId, setProjectId] = useState('');
   const [zone, setZone] = useState('');
@@ -82,32 +79,6 @@ function App() {
     gcpApiRequest('/api/gcp/vms', { project_id: projectId, zone });
   };
 
-  const handleFetchVMsFromUpload = async () => {
-    setActiveGcpTab('vms'); // Reuse the same output table
-    if (!uploadFile || !uploadProjectId || !uploadZone) {
-      setGcpError('Service Account file, Project ID, and Zone are required for upload.');
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('service_account_file', uploadFile);
-    formData.append('project_id', uploadProjectId);
-    formData.append('zone', uploadZone);
-
-    setIsGcpLoading(true);
-    setGcpOutput(null);
-    setGcpError('');
-    try {
-      const response = await axios.post('/api/gcp/vms/upload', formData);
-      setGcpOutput(response.data);
-    } catch (err) {
-      const errorDetails = err.response?.data?.error || err.message;
-      const details = err.response?.data?.details || '';
-      setGcpError(`Failed to fetch data from uploaded file: ${errorDetails} ${details}`);
-    } finally {
-      setIsGcpLoading(false);
-    }
-  };
 
   const handleRunScript = async () => {
     setIsLoading(true);
@@ -193,21 +164,6 @@ function App() {
           <h3>GCP Output:</h3>
           {gcpError && <pre className="error-output">{gcpError}</pre>}
           {renderGcpOutput()}
-        </div>
-      </div>
-
-      {/* --- Ad-hoc Project Upload Section --- */}
-      <div className="upload-section">
-        <h2>Ad-hoc Project (Upload)</h2>
-        <div className="gcp-inputs">
-          <input type="file" accept=".json" onChange={(e) => setUploadFile(e.target.files[0])} />
-          <input type="text" value={uploadProjectId} onChange={(e) => setUploadProjectId(e.target.value)} placeholder="Project ID (e.g., my-gcp-project)" />
-          <input type="text" value={uploadZone} onChange={(e) => setUploadZone(e.target.value)} placeholder="Zone (e.g., asia-southeast1-b)" />
-        </div>
-        <div className="gcp-actions">
-          <button onClick={handleFetchVMsFromUpload} disabled={isGcpLoading}>
-            {isGcpLoading ? 'Fetching...' : 'List VMs from Uploaded File'}
-          </button>
         </div>
       </div>
 
