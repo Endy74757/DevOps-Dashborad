@@ -69,7 +69,8 @@ def run_script():
     try:
         # รันสคริปต์และดักจับผลลัพธ์ (stdout) และ error (stderr)
         result = subprocess.run(
-            [script_path], capture_output=True, text=True, check=True, timeout=30
+            # On Windows, we need to explicitly use 'bash' to run .sh files
+            ['bash', script_path], capture_output=True, text=True, check=True, timeout=30
         )
         return jsonify({'output': result.stdout})
     except subprocess.CalledProcessError as e:

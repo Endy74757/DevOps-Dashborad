@@ -26,7 +26,7 @@ function App() {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await axios.get('http://127.0.0.1:5000/api/gcp/projects');
+        const response = await axios.get('/api/gcp/projects');
         setProjects(response.data || []);
         if (response.data && response.data.length > 0) {
           // Select the first project by default
@@ -57,7 +57,7 @@ function App() {
     setGcpOutput(null);
     setGcpError('');
     try {
-      const response = await axios.post(`http://127.0.0.1:5000${endpoint}`, payload);
+      const response = await axios.post(endpoint, payload);
       setGcpOutput(response.data);
     } catch (err) {
       const errorDetails = err.response?.data?.error || err.message;
@@ -93,7 +93,7 @@ function App() {
 
     try {
       // เรียก API ที่ backend ของเรา
-      const response = await axios.post('http://127.0.0.1:5000/api/run-script', {
+      const response = await axios.post('/api/run-script', {
         script_id: 'list_files' // ส่ง id ของสคริปต์ที่ต้องการรัน
       });
       setOutput(response.data.output);
