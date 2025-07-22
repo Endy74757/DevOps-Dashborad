@@ -3,11 +3,12 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
 # New imports for GCP
+import json
 from google.oauth2 import service_account
 from google.cloud import compute_v1
 from google.api_core import exceptions as google_exceptions
 import yaml
-from werkzeug.utils import secure_filename
+import tempfile
 
 app = Flask(__name__)
 # อนุญาตให้ frontend (เช่น localhost:5173) เรียก API นี้ได้
@@ -98,6 +99,28 @@ def get_gcp_projects():
     except Exception as e:
         return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
 
+# --- Refactored VM Listing Logic ---
+def _list_vms_from_credentials(credentials, project_id, zone):
+    """Helper function to list VMs given credentials."""
+    instance_client = compute_v1.InstancesClient(credentials=credentials)
+    instances = instance_client.list(project=project_id, zone=zone)
+    
+    vm_list = []
+    for instance in instances:
+        # Get external IP if available
+        external_ip = ''
+        if instance.network_interfaces and instance.network_interfaces[0].access_configs:
+            external_ip = instance.network_interfaces[0].access_configs[0].nat_i_p
+
+        vm_list.append({
+            'name': instance.name,
+            'status': instance.status,
+            'machine_type': instance.machine_type.split('/')[-1],
+            'internal_ip': instance.network_interfaces[0].network_i_p,
+            'external_ip': external_ip or '-'
+        })
+    return vm_list
+
 # --- NEW GCP Endpoints ---
 
 @app.route('/gcp/vms', methods=['POST'])
@@ -111,24 +134,7 @@ def list_gcp_vms():
 
     try:
         credentials = get_gcp_credentials(project_id)
-        instance_client = compute_v1.InstancesClient(credentials=credentials)
-        instances = instance_client.list(project=project_id, zone=zone)
-        
-        vm_list = []
-        for instance in instances:
-            # Get external IP if available
-            external_ip = ''
-            if instance.network_interfaces and instance.network_interfaces[0].access_configs:
-                external_ip = instance.network_interfaces[0].access_configs[0].nat_i_p
-
-            vm_list.append({
-                'name': instance.name,
-                'status': instance.status,
-                'machine_type': instance.machine_type.split('/')[-1],
-                'internal_ip': instance.network_interfaces[0].network_i_p,
-                'external_ip': external_ip or '-'
-            })
-        
+        vm_list = _list_vms_from_credentials(credentials, project_id, zone)
         return jsonify(vm_list)
         
     except google_exceptions.NotFound:
@@ -140,68 +146,89 @@ def list_gcp_vms():
     except Exception as e:
         return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
 
-UPLOAD_FOLDER = os.path.join(_basedir, 'credentials')
-ALLOWED_EXTENSIONS = {'json'}
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-@app.route('/gcp/upload-credential', methods=['POST'])
-def upload_credential():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
-    file = request.files['file']
+@app.route('/gcp/vms/upload', methods=['POST'])
+def list_gcp_vms_from_upload():
+    # Check if the post request has the file part
+    if 'service_account_file' not in request.files:
+        return jsonify({'error': 'No service_account_file part in the request'}), 400
+    
+    file = request.files['service_account_file']
     project_id = request.form.get('project_id')
-    name = request.form.get('name')
-    default_zone = request.form.get('default_zone')
-    default_region = request.form.get('default_region')
+    zone = request.form.get('zone')
+
     if not file or file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
-    if not project_id:
-        return jsonify({'error': 'Missing project_id'}), 400
-    if file and allowed_file(file.filename):
-        filename = secure_filename(f"{project_id}_credential.json")
-        filepath = os.path.join(UPLOAD_FOLDER, filename)
-        file.save(filepath)
-        # Update projects.yaml
-        update_project_credential_path(project_id, os.path.relpath(filepath, _basedir), name, default_zone, default_region)
-        return jsonify({'message': 'File uploaded successfully', 'path': filepath})
-    else:
-        return jsonify({'error': 'Invalid file type'}), 400
+    if not project_id or not zone:
+        return jsonify({'error': 'project_id and zone are required'}), 400
+    if not file.filename.endswith('.json'):
+        return jsonify({'error': 'File must be a .json file'}), 400
 
-def update_project_credential_path(project_id, credential_path, name=None, default_zone=None, default_region=None):
-    project_file_path = os.path.join(_basedir, 'projects.yaml')
+    # Use a temporary file to securely handle the uploaded credentials
+    temp_file_path = None
     try:
-        with open(project_file_path, 'r') as f:
-            projects = yaml.safe_load(f) or []
-        found = False
-        for project in projects:
-            if project['id'] == project_id:
-                project['credentials_path'] = credential_path
-                if name:
-                    project['name'] = name
-                if default_zone:
-                    project['default_zone'] = default_zone
-                if default_region:
-                    project['default_region'] = default_region
-                found = True
-                break
-        if not found:
-            # Add new project with all fields
-            new_project = {'id': project_id, 'credentials_path': credential_path}
-            if name:
-                new_project['name'] = name
-            if default_zone:
-                new_project['default_zone'] = default_zone
-            if default_region:
-                new_project['default_region'] = default_region
-            projects.append(new_project)
-        with open(project_file_path, 'w') as f:
-            yaml.safe_dump(projects, f)
-        load_project_configs()  # reload configs
+        # Create a temporary file and write the uploaded content to it
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".json", mode='w', encoding='utf-8') as temp_f:
+            file.save(temp_f)
+            temp_file_path = temp_f.name
+        
+        # Now use this temporary file to get credentials
+        credentials_info = json.load(open(temp_file_path, 'r', encoding='utf-8'))
+        credentials = service_account.Credentials.from_service_account_info(
+            credentials_info,
+            scopes=["https://www.googleapis.com/auth/cloud-platform"]
+        )
+
+        vm_list = _list_vms_from_credentials(credentials, project_id, zone)
+        return jsonify(vm_list)
+
+    except json.JSONDecodeError:
+        return jsonify({'error': 'Invalid JSON file format.'}), 400
+    except google_exceptions.NotFound:
+        return jsonify({'error': f'Project "{project_id}" or zone "{zone}" not found.'}), 404
+    except google_exceptions.PermissionDenied:
+        return jsonify({'error': 'Permission denied. Check the Service Account credentials and ensure it has the "Compute Viewer" role.'}), 403
     except Exception as e:
-        print(f"Error updating projects.yaml: {e}")
+        return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
+    finally:
+        # Ensure the temporary file is deleted
+        if temp_file_path and os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+
+@app.route('/gcp/load-balancers', methods=['POST'])
+def list_load_balancers():
+    data = request.get_json()
+    project_id = data.get('project_id')
+    region = data.get('region')
+
+    if not project_id or not region:
+        return jsonify({'error': 'project_id and region are required'}), 400
+
+    try:
+        credentials = get_gcp_credentials(project_id)
+        client = compute_v1.ForwardingRulesClient(credentials=credentials)
+        forwarding_rules = client.list(project=project_id, region=region)
+        
+        lb_list = []
+        for rule in forwarding_rules:
+            lb_list.append({
+                'name': rule.name,
+                'ip_address': rule.i_p_address,
+                'target': rule.target.split('/')[-1],
+                'load_balancing_scheme': rule.load_balancing_scheme,
+                'ip_protocol': rule.i_p_protocol,
+                'ports': list(rule.ports)
+            })
+            
+        return jsonify(lb_list)
+
+    except google_exceptions.NotFound:
+        return jsonify({'error': f'Project "{project_id}" or region "{region}" not found.'}), 404
+    except google_exceptions.PermissionDenied:
+        return jsonify({'error': 'Permission denied. Check the Service Account credentials and ensure it has the "Compute Viewer" role.'}), 403
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
 
 if __name__ == '__main__':
     # --- Check for GOOGLE_APPLICATION_CREDENTIALS ---

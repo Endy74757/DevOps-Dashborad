@@ -41,6 +41,12 @@
   color: #888;
 }
 
+.upload-section {
+  background-color: #2a2a2a;
+  padding: 20px;
+  border-radius: 8px;
+}
+
 .gcp-section, .script-runner-section {
   width: 100%;
   max-width: 960px;
