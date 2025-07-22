@@ -7,6 +7,7 @@ from google.oauth2 import service_account
 from google.cloud import compute_v1
 from google.api_core import exceptions as google_exceptions
 import yaml
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 # อนุญาตให้ frontend (เช่น localhost:5173) เรียก API นี้ได้
@@ -139,41 +140,51 @@ def list_gcp_vms():
     except Exception as e:
         return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
 
-@app.route('/gcp/load-balancers', methods=['POST'])
-def list_load_balancers():
-    data = request.get_json()
-    project_id = data.get('project_id')
-    region = data.get('region')
+UPLOAD_FOLDER = os.path.join(_basedir, 'credentials')
+ALLOWED_EXTENSIONS = {'json'}
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-    if not project_id or not region:
-        return jsonify({'error': 'project_id and region are required'}), 400
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+@app.route('/gcp/upload-credential', methods=['POST'])
+def upload_credential():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    file = request.files['file']
+    project_id = request.form.get('project_id')
+    if not file or file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    if not project_id:
+        return jsonify({'error': 'Missing project_id'}), 400
+    if file and allowed_file(file.filename):
+        filename = secure_filename(f"{project_id}_credential.json")
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(filepath)
+        # Update projects.yaml
+        update_project_credential_path(project_id, os.path.relpath(filepath, _basedir))
+        return jsonify({'message': 'File uploaded successfully', 'path': filepath})
+    else:
+        return jsonify({'error': 'Invalid file type'}), 400
+
+def update_project_credential_path(project_id, credential_path):
+    project_file_path = os.path.join(_basedir, 'projects.yaml')
     try:
-        credentials = get_gcp_credentials(project_id)
-        client = compute_v1.ForwardingRulesClient(credentials=credentials)
-        forwarding_rules = client.list(project=project_id, region=region)
-        
-        lb_list = []
-        for rule in forwarding_rules:
-            lb_list.append({
-                'name': rule.name,
-                'ip_address': rule.i_p_address,
-                'target': rule.target.split('/')[-1],
-                'load_balancing_scheme': rule.load_balancing_scheme,
-                'ip_protocol': rule.i_p_protocol,
-                'ports': list(rule.ports)
-            })
-            
-        return jsonify(lb_list)
-
-    except google_exceptions.NotFound:
-        return jsonify({'error': f'Project "{project_id}" or region "{region}" not found.'}), 404
-    except google_exceptions.PermissionDenied:
-        return jsonify({'error': 'Permission denied. Check the Service Account credentials and ensure it has the "Compute Viewer" role.'}), 403
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
+        with open(project_file_path, 'r') as f:
+            projects = yaml.safe_load(f) or []
+        found = False
+        for project in projects:
+            if project['id'] == project_id:
+                project['credentials_path'] = credential_path
+                found = True
+                break
+        if not found:
+            projects.append({'id': project_id, 'credentials_path': credential_path})
+        with open(project_file_path, 'w') as f:
+            yaml.safe_dump(projects, f)
+        load_project_configs()  # reload configs
     except Exception as e:
-        return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
+        print(f"Error updating projects.yaml: {e}")
 
 if __name__ == '__main__':
     # --- Check for GOOGLE_APPLICATION_CREDENTIALS ---

@@ -22,6 +22,10 @@ function App() {
   const [region, setRegion] = useState('');
   const [activeGcpTab, setActiveGcpTab] = useState('');
 
+  const [uploadFile, setUploadFile] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState('');
+  const [uploadError, setUploadError] = useState('');
+
   // Fetch projects on component load
   useEffect(() => {
     const fetchProjects = async () => {
@@ -106,6 +110,40 @@ function App() {
     }
   };
 
+  const handleFileChange = (e) => {
+    setUploadFile(e.target.files[0]);
+    setUploadStatus('');
+    setUploadError('');
+  };
+
+  const handleUploadCredential = async () => {
+    if (!uploadFile) {
+      setUploadError('Please select a file to upload.');
+      return;
+    }
+    if (!selectedProjectId) {
+      setUploadError('Please select a project.');
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', uploadFile);
+    formData.append('project_id', selectedProjectId);
+    setUploadStatus('');
+    setUploadError('');
+    try {
+      const response = await axios.post('/api/gcp/upload-credential', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setUploadStatus('Upload successful!');
+      setUploadError('');
+      setUploadFile(null);
+    } catch (err) {
+      const errorDetails = err.response?.data?.error || err.message;
+      setUploadError(`Upload failed: ${errorDetails}`);
+      setUploadStatus('');
+    }
+  };
+
   const renderGcpOutput = () => {
     if (isGcpLoading) return <p>Loading...</p>;
     if (!gcpOutput) return null;
@@ -187,6 +225,18 @@ function App() {
           </select>
           <input type="text" value={zone} onChange={(e) => setZone(e.target.value)} placeholder="Zone (e.g., asia-southeast1-b)" />
           <input type="text" value={region} onChange={(e) => setRegion(e.target.value)} placeholder="Region (e.g., asia-southeast1)" />
+        </div>
+        {/* Credential Upload Section */}
+        <div className="gcp-credential-upload" style={{ margin: '10px 0' }}>
+          <label>
+            Upload Service Account Credential (.json):
+            <input type="file" accept=".json" onChange={handleFileChange} />
+          </label>
+          <button onClick={handleUploadCredential} disabled={!uploadFile || !selectedProjectId} style={{ marginLeft: '8px' }}>
+            Upload
+          </button>
+          {uploadStatus && <span style={{ color: 'green', marginLeft: '10px' }}>{uploadStatus}</span>}
+          {uploadError && <span style={{ color: 'red', marginLeft: '10px' }}>{uploadError}</span>}
         </div>
         <div className="gcp-actions">
           <button onClick={handleFetchVMs} disabled={isGcpLoading}>
