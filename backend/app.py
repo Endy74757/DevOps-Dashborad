@@ -50,9 +50,9 @@ def get_gcp_credentials(project_id):
     if not config or 'credentials_path' not in config:
         raise ValueError(f"Credentials path for project '{project_id}' not found in projects.yaml")
     credentials_path = config['credentials_path']
-    return service_account.Credentials.from_service_account_file(credentials_path)
+    return service_account.Credentials.from_service_account_file(credentials_path, scopes=["https://www.googleapis.com/auth/cloud-platform"])
 
-@app.route('/api/run-script', methods=['POST'])
+@app.route('/run-script', methods=['POST'])
 def run_script():
     data = request.get_json()
     script_id = data.get('script_id')
@@ -82,7 +82,7 @@ def run_script():
 
 # --- NEW GCP Projects Endpoint ---
 
-@app.route('/api/gcp/projects', methods=['GET'])
+@app.route('/gcp/projects', methods=['GET'])
 def get_gcp_projects():
     try:
         # Use an absolute path to be safe, so it works regardless of CWD
@@ -99,7 +99,7 @@ def get_gcp_projects():
 
 # --- NEW GCP Endpoints ---
 
-@app.route('/api/gcp/vms', methods=['POST'])
+@app.route('/gcp/vms', methods=['POST'])
 def list_gcp_vms():
     data = request.get_json()
     project_id = data.get('project_id')
@@ -139,7 +139,7 @@ def list_gcp_vms():
     except Exception as e:
         return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
 
-@app.route('/api/gcp/load-balancers', methods=['POST'])
+@app.route('/gcp/load-balancers', methods=['POST'])
 def list_load_balancers():
     data = request.get_json()
     project_id = data.get('project_id')

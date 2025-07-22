@@ -3,6 +3,9 @@ kind: Ingress
 metadata:
   name: nginx-ingress
   annotations:
+    # บอกให้ Nginx Ingress Controller เชื่อและใช้ X-Forwarded-* headers
+    # ที่ส่งมาจาก Proxy (HAProxy) ที่อยู่ด้านหน้า
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
     # For the root path, rewrite to / for the frontend
     nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
