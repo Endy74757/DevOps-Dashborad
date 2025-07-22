@@ -1,11 +1,11 @@
 - name: "Terraform Training"
   id: "terraform-trianning"
-  credentials_path: "./gcp-credentials.json" # <-- ตัวอย่าง
+  credentials_path: "./credentials/gcp-credentials.json" # <-- ตัวอย่าง
   default_zone: "asia-southeast1-b"
   default_region: "asia-southeast1"
 
 - name: "Development Project"
   id: "devops-training-464011"
-  credentials_path: "./gcp-credentials2.json" # <-- ตัวอย่าง
+  credentials_path: "./credentials/gcp-credentials2.json" # <-- ตัวอย่าง
   default_zone: "asia-southeast1-a"
   default_region: "asia-southeast1"
