@@ -153,6 +153,9 @@ def upload_credential():
         return jsonify({'error': 'No file part'}), 400
     file = request.files['file']
     project_id = request.form.get('project_id')
+    name = request.form.get('name')
+    default_zone = request.form.get('default_zone')
+    default_region = request.form.get('default_region')
     if not file or file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     if not project_id:
@@ -162,12 +165,12 @@ def upload_credential():
         filepath = os.path.join(UPLOAD_FOLDER, filename)
         file.save(filepath)
         # Update projects.yaml
-        update_project_credential_path(project_id, os.path.relpath(filepath, _basedir))
+        update_project_credential_path(project_id, os.path.relpath(filepath, _basedir), name, default_zone, default_region)
         return jsonify({'message': 'File uploaded successfully', 'path': filepath})
     else:
         return jsonify({'error': 'Invalid file type'}), 400
 
-def update_project_credential_path(project_id, credential_path):
+def update_project_credential_path(project_id, credential_path, name=None, default_zone=None, default_region=None):
     project_file_path = os.path.join(_basedir, 'projects.yaml')
     try:
         with open(project_file_path, 'r') as f:
@@ -176,10 +179,24 @@ def update_project_credential_path(project_id, credential_path):
         for project in projects:
             if project['id'] == project_id:
                 project['credentials_path'] = credential_path
+                if name:
+                    project['name'] = name
+                if default_zone:
+                    project['default_zone'] = default_zone
+                if default_region:
+                    project['default_region'] = default_region
                 found = True
                 break
         if not found:
-            projects.append({'id': project_id, 'credentials_path': credential_path})
+            # Add new project with all fields
+            new_project = {'id': project_id, 'credentials_path': credential_path}
+            if name:
+                new_project['name'] = name
+            if default_zone:
+                new_project['default_zone'] = default_zone
+            if default_region:
+                new_project['default_region'] = default_region
+            projects.append(new_project)
         with open(project_file_path, 'w') as f:
             yaml.safe_dump(projects, f)
         load_project_configs()  # reload configs

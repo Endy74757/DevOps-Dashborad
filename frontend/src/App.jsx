@@ -26,6 +26,14 @@ function App() {
   const [uploadStatus, setUploadStatus] = useState('');
   const [uploadError, setUploadError] = useState('');
 
+  const [isNewProject, setIsNewProject] = useState(false);
+  const [newProject, setNewProject] = useState({
+    name: '',
+    id: '',
+    default_zone: '',
+    default_region: ''
+  });
+
   // Fetch projects on component load
   useEffect(() => {
     const fetchProjects = async () => {
@@ -44,6 +52,18 @@ function App() {
   }, []); // Empty array ensures this runs only once
 
   const handleProjectChange = (newProjectId, projectList) => {
+    if (newProjectId === '__new__') {
+      setIsNewProject(true);
+      setSelectedProjectId('');
+      setProjectId('');
+      setZone('');
+      setRegion('');
+      setGcpOutput(null);
+      setGcpError('');
+      return;
+    } else {
+      setIsNewProject(false);
+    }
     const aProjects = projectList || projects;
     const project = aProjects.find(p => p.id === newProjectId);
     if (project) {
@@ -117,17 +137,28 @@ function App() {
   };
 
   const handleUploadCredential = async () => {
+    let formData = new FormData();
+    if (isNewProject) {
+      if (!newProject.name || !newProject.id || !newProject.default_zone || !newProject.default_region) {
+        setUploadError('Please fill in all project fields.');
+        return;
+      }
+      formData.append('project_id', newProject.id);
+      formData.append('name', newProject.name);
+      formData.append('default_zone', newProject.default_zone);
+      formData.append('default_region', newProject.default_region);
+    } else {
+      if (!selectedProjectId) {
+        setUploadError('Please select a project.');
+        return;
+      }
+      formData.append('project_id', selectedProjectId);
+    }
     if (!uploadFile) {
       setUploadError('Please select a file to upload.');
       return;
     }
-    if (!selectedProjectId) {
-      setUploadError('Please select a project.');
-      return;
-    }
-    const formData = new FormData();
     formData.append('file', uploadFile);
-    formData.append('project_id', selectedProjectId);
     setUploadStatus('');
     setUploadError('');
     try {
@@ -137,6 +168,11 @@ function App() {
       setUploadStatus('Upload successful!');
       setUploadError('');
       setUploadFile(null);
+      setNewProject({ name: '', id: '', default_zone: '', default_region: '' });
+      setIsNewProject(false);
+      // Refresh project list
+      const resp = await axios.get('/api/gcp/projects');
+      setProjects(resp.data || []);
     } catch (err) {
       const errorDetails = err.response?.data?.error || err.message;
       setUploadError(`Upload failed: ${errorDetails}`);
@@ -217,22 +253,33 @@ function App() {
       <div className="gcp-section">
         <h2>Google Cloud Platform</h2>
         <div className="gcp-inputs">
-          <select value={selectedProjectId} onChange={(e) => handleProjectChange(e.target.value)}>
+          <select value={isNewProject ? '__new__' : selectedProjectId} onChange={(e) => handleProjectChange(e.target.value)}>
             <option value="" disabled>-- Select a Project --</option>
             {projects.map(p => (
               <option key={p.id} value={p.id}>{p.name} ({p.id})</option>
             ))}
+            <option value="__new__">+ Add New Project</option>
           </select>
-          <input type="text" value={zone} onChange={(e) => setZone(e.target.value)} placeholder="Zone (e.g., asia-southeast1-b)" />
-          <input type="text" value={region} onChange={(e) => setRegion(e.target.value)} placeholder="Region (e.g., asia-southeast1)" />
+          <input type="text" value={zone} onChange={(e) => setZone(e.target.value)} placeholder="Zone (e.g., asia-southeast1-b)" disabled={isNewProject} />
+          <input type="text" value={region} onChange={(e) => setRegion(e.target.value)} placeholder="Region (e.g., asia-southeast1)" disabled={isNewProject} />
         </div>
+        {/* New Project Form */}
+        {isNewProject && (
+          <div className="gcp-new-project-form" style={{ margin: '10px 0', padding: '10px', border: '1px solid #ccc' }}>
+            <h4>Add New Project</h4>
+            <input type="text" placeholder="Project Name" value={newProject.name} onChange={e => setNewProject({ ...newProject, name: e.target.value })} />
+            <input type="text" placeholder="Project ID" value={newProject.id} onChange={e => setNewProject({ ...newProject, id: e.target.value })} />
+            <input type="text" placeholder="Default Zone" value={newProject.default_zone} onChange={e => setNewProject({ ...newProject, default_zone: e.target.value })} />
+            <input type="text" placeholder="Default Region" value={newProject.default_region} onChange={e => setNewProject({ ...newProject, default_region: e.target.value })} />
+          </div>
+        )}
         {/* Credential Upload Section */}
         <div className="gcp-credential-upload" style={{ margin: '10px 0' }}>
           <label>
             Upload Service Account Credential (.json):
             <input type="file" accept=".json" onChange={handleFileChange} />
           </label>
-          <button onClick={handleUploadCredential} disabled={!uploadFile || !selectedProjectId} style={{ marginLeft: '8px' }}>
+          <button onClick={handleUploadCredential} disabled={!uploadFile || (isNewProject ? (!newProject.name || !newProject.id || !newProject.default_zone || !newProject.default_region) : !selectedProjectId)} style={{ marginLeft: '8px' }}>
             Upload
           </button>
           {uploadStatus && <span style={{ color: 'green', marginLeft: '10px' }}>{uploadStatus}</span>}
