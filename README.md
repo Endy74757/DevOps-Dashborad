@@ -81,7 +81,6 @@ kubectl apply -f k8s/
 - **Automation:** ทุกขั้นตอน automate ด้วย Jenkins
 - **Consistency:** ใช้ Docker ให้ environment เหมือนกันทุกที่
 - **Scalability:** ใช้ Kubernetes รองรับการ scale
-- **Observability:** รองรับการเพิ่ม monitoring/logging
 - **Configuration as Code:** ทุกอย่างอยู่ในรูปแบบไฟล์ config
 
 ---
