@@ -12,7 +12,6 @@
 - **Containerization:** มีประสบการณ์กับ Docker, Docker Compose
 - **Cloud Native:** ใช้งาน Kubernetes สำหรับการจัดการและ scale ระบบ
 - **Infrastructure as Code:** เขียนและจัดการ Kubernetes manifests, config management
-- **Monitoring & Observability:** วางโครงสร้างให้รองรับการเพิ่ม monitoring/logging ได้ง่าย
 - **Team Collaboration:** ทำงานร่วมกับทีมพัฒนาและ operation ได้อย่างมีประสิทธิภาพ
 
 ---
